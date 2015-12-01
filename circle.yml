@@ -1,0 +1,4 @@
+notify:
+  webhooks:
+    # A list of hook hashes, containing the url field
+    - url: https://hook.bearychat.com/=bw7xs/circleci/0ec845204ecfd51b3fd08d606b5d156d
