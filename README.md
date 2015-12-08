@@ -4,10 +4,11 @@ React Redux Starter Kit
 [![Join the chat at https://gitter.im/davezuko/react-redux-starter-kit](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/davezuko/react-redux-starter-kit?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/davezuko/react-redux-starter-kit.svg?branch=master)](https://travis-ci.org/davezuko/react-redux-starter-kit?branch=master)
 [![dependencies](https://david-dm.org/davezuko/react-redux-starter-kit.svg)](https://david-dm.org/davezuko/react-redux-starter-kit)
+[![devDependency Status](https://david-dm.org/davezuko/react-redux-starter-kit/dev-status.svg)](https://david-dm.org/davezuko/react-redux-starter-kit#info=devDependencies)
 
-Starter kit to get you up and running with a bunch of awesome new front-end technologies, all on top of a configurable, feature-rich webpack build system that's already setup to provide hot reloading, sass imports with CSS extraction, unit testing, code coverage reports, bundle splitting, and a whole lot more. Check out the full feature list below!
+This starter kit is designed to get you up and running with a bunch of awesome new front-end technologies, all on top of a configurable, feature-rich webpack build system that's already setup to provide hot reloading, sass imports with CSS extraction, unit testing, code coverage reports, bundle splitting, and a whole lot more.
 
-Redux, React-Router, and React are constantly releasing new API changes. If you'd like to help keep this boilerplate up to date, please contribute or create a new issue if you think this starter kit is missing something!
+The primary goal of this project is to remain as **unopinionated** as possible. Its purpose is not to dictate your project structure or to demonstrate a complete sample application, but to provide a set of tools intended to make front-end development robust, easy, and, most importantly, fun. Check out the full feature list below!
 
 Table of Contents
 -----------------
@@ -17,9 +18,11 @@ Table of Contents
 1. [Usage](#usage)
 1. [Structure](#structure)
 1. [Webpack](#webpack)
+1. [Server](#server)
 1. [Styles](#styles)
 1. [Testing](#testing)
 1. [Utilities](#utilities)
+1. [Deployment](#deployment)
 1. [Troubleshooting](#troubleshooting)
 
 Requirements
@@ -32,13 +35,22 @@ Features
 
 * [React](https://github.com/facebook/react) (`^0.14.0`)
   * Includes react-addons-test-utils (`^0.14.0`)
-* [React-Router](https://github.com/rackt/react-router) (`^1.0.0`)
 * [Redux](https://github.com/gaearon/redux) (`^3.0.0`)
-  * redux-simple-router (`^0.0.10`)
   * react-redux (`^4.0.0`)
   * redux-devtools
     * use `npm run dev:nw` to display in a separate window.
   * redux-thunk middleware
+* [react-router](https://github.com/rackt/react-router) (`^1.0.0`)
+* [redux-simple-router](https://github.com/jlongster/redux-simple-router) (`^0.0.10`)
+* [Webpack](https://github.com/webpack/webpack)
+  * Separates application code from vendor dependencies
+  * dev middleware and HMR via Express middleware
+  * sass-loader with CSS extraction
+  * postcss-loader with cssnano for style autoprefixing and minification
+  * Pre-configured folder aliases and globals
+* [Express](https://github.com/strongloop/express)
+  * webpack-dev-middleware
+  * webpack-hot-middleware
 * [Karma](https://github.com/karma-runner/karma)
   * Mocha w/ Chai, Sinon-Chai, and Chai-as-Promised
   * PhantomJS
@@ -47,11 +59,6 @@ Features
   * `react-transform-hmr` for hot reloading
   * `react-transform-catch-errors` with `redbox-react` for more visible error reporting
   * Uses babel runtime rather than inline transformations
-* [Webpack](https://github.com/webpack/webpack)
-  * Separates application code from vendor dependencies
-  * webpack-dev-server
-  * sass-loader with CSS extraction
-  * Pre-configured folder aliases and globals
 * [ESLint](http://eslint.org)
   * Uses [Airbnb's ESLint config](https://github.com/airbnb/javascript/tree/master/packages/eslint-config-airbnb) (with some softened rules)
   * Includes separate test-specific `.eslintrc` to work with Mocha and Chai
@@ -62,8 +69,8 @@ Getting Started
 Just clone the repo and install the necessary node modules:
 
 ```shell
-$ git clone https://github.com/davezuko/react-redux-starter-kit.git ReduxStarterApp
-$ cd ReduxStarterApp
+$ git clone https://github.com/davezuko/react-redux-starter-kit.git
+$ cd react-redux-starter-kit
 $ npm install                   # Install Node modules listed in ./package.json (may take a while the first time)
 $ npm start                     # Compile and launch
 ```
@@ -71,38 +78,40 @@ $ npm start                     # Compile and launch
 Usage
 -----
 
-#### `npm start` (alias for `npm run dev`)
-Runs the webpack build system with webpack-dev-server (by default found at `localhost:3000`).
+Before delving into the descriptions for each available npm script, here's a brief summary of the three which will most likely be your bread and butter:
 
-#### `npm run dev:nw`
-Same as `npm run start` but opens the debug tools in a new window.
+* Doing live development? Use `npm start` to spin up the dev server.
+* Compiling the application to disk? Use `npm run compile`.
+* Deploying to an environment? `npm run deploy` can help with that.
 
-**Note:** you'll need to allow popups in Chrome, or you'll see an error: [issue 110](https://github.com/davezuko/react-redux-starter-kit/issues/110)
+**NOTE:** This package makes use of [debug](https://github.com/visionmedia/debug) to improve your debugging experience. To see all starter kit messages during the build process, set the `DEBUG` environment variable to `kit:*` (e.g. `DEBUG=kit:* npm start`).
 
-#### `npm run dev:no-debug`
-Same as `npm run start` but disables devtools.
+Great, now that introductions have been made here's everything in full detail:
 
-#### `npm run compile`
-Runs the webpack build system with your current NODE_ENV and compiles the application to disk (`~/dist`).
+* `npm start` - Spins up express server to serve your app at `localhost:3000`. HMR will be enabled in development.
+* `npm run compile` - Compiles the application to disk (`~/dist` by default).
+* `npm run dev:nw` - Same as `npm start`, but opens the redux devtools in a new window.
+* `npm run dev:no-debug` - Same as `npm start` but disables redux devtools.
+* `npm run test` - Runs unit tests with Karma and generates a coverage report.
+* `npm run test:dev` - Runs Karma and watches for changes to re-run tests; does not generate coverage reports.
+* `npm run lint` - Runs ESLint against your source code.
+* `npm run lint:tests` - Runs ESLint against your tests.
+* `npm run deploy`- Runs linter, tests, and then, on success, compiles your application to disk.
 
-#### `npm run test`
-Runs unit tests with Karma and generates coverage reports.
-
-#### `npm run test:dev`
-Similar to `npm run test`, but will watch for changes and re-run tests; does not generate coverage reports.
-
-#### `npm run lint`
-Runs ESLint against all `.js` files in `~/src`. This used to be a webpack preloader, but the browser console output could get fairly ugly. If you want development-time linting, consider using an `eslint` plugin for your text editor.
-
-#### `npm run lint:tests`
-Lints all `.spec.js` files in of `~/tests`.
-
-#### `npm run deploy`
-Helper script to run linter, tests, and then, on success, compile your application to disk.
+**NOTE:** Deploying to a specific environment? Make sure to specify your target `NODE_ENV` so webpack will use the correct configuration. For example: `NODE_ENV=production npm run compile` will compile your application with `~/build/webpack/production.js`.
 
 ### Configuration
 
 Basic project configuration can be found in `~/config/index.js`. Here you'll be able to redefine your `src` and `dist` directories, add/remove aliases, tweak your vendor dependencies, and more. For the most part, you should be able to make your changes in here without ever having to touch the webpack build configuration.
+
+Common configuration options:
+
+* `dir_src` - application source code base path
+* `dir_dist` - path to build compiled application to
+* `server_host` - hostname for the express server
+* `server_port` - port for the express server
+* `production_enable_source_maps` - create source maps in production?
+* `vendor_dependencies` - packages to separate into to the vendor bundle.
 
 Structure
 ---------
@@ -115,6 +124,8 @@ The folder structure provided is only meant to serve as a guide, it is by no mea
 ├── build                    # All build-related configuration
 │   └── webpack              # Environment-specific configuration files for webpack
 ├── config                   # Project configuration settings
+├── server                   # Express application (uses webpack middleware)
+│   └── app.js               # Server application entry point
 ├── src                      # Application source code
 │   ├── actions              # Redux action creators
 │   ├── components           # Generic React Components (generally Dumb components)
@@ -139,7 +150,7 @@ Webpack
 -------
 
 ### Configuration
-The webpack compiler configuration is located in `~/build/webpack`. Here you'll find configurations for each environment; `development`, `production`, and `development_hot` exist out of the box. These configurations are selected based on your current `NODE_ENV`, with the exception of `development_hot` which will _always_ be used by webpack dev server.
+The webpack compiler configuration is located in `~/build/webpack`. Here you'll find configurations for each environment; `development`, `production`, and `development_hot` exist out of the box. These configurations are selected based on your current `NODE_ENV`, with the exception of `development_hot` which will _always_ be used during live development.
 
 **Note**: There has been a conscious decision to keep development-specific configuration (such as hot-reloading) out of `.babelrc`. By doing this, it's possible to create cleaner development builds (such as for teams that have a `dev` -> `stage` -> `production` workflow) that don't, for example, constantly poll for HMR updates.
 
@@ -196,6 +207,11 @@ True when `process.env.NODE_ENV` is `production`
 
 #### `__DEBUG__`
 True when the compiler is run with `--debug` (any environment).
+
+Server
+------
+
+This starter kit comes packaged with an Express server. It's important to note that the sole purpose of this server is to provide `webpack-dev-middleware` and `webpack-hot-middleware` for hot module replacement. Using a custom Express app in place of webpack-dev-server will hopefully make it easier for users to extend the starter kit to include functionality such as back-end API's, isomorphic/universal rendering, and more -- all without bloating the base boilerplate. Because of this, it should be noted that the provided server is **not** production-ready. If you're deploying to production, take a look at [the deployment section](#deployment).
 
 Styles
 ------
@@ -272,7 +288,20 @@ export default createReducer(initialState, {
 });
 ```
 
+Deployment
+----------
+
+Out of the box, this starter kit is deployable by serving the `~/dist` folder generated by `npm run compile` (make sure to specify your target `NODE_ENV` as well). This project does not concern itself with the details of server-side rendering or API structure, since that demands an opinionated structure that makes it difficult to extend the starter kit. However, if you do need help with more advanced deployment strategies, here are a few tips:
+
+If you are serving the application via a web server such as nginx, make sure to direct incoming routes to the root `~/dist/index.html` file and let react-router take care of the rest. The Express server that comes with the starter kit is able to be extended to serve as an API or whatever else you need, but that's entirely up to you.
+
+Have more questions? Feel free to submit an issue or join the Gitter chat!
+
 Troubleshooting
 ---------------
 
-Nothing yet. Having an issue? Report it and I'll get to it as soon as possible!
+### `npm run dev:nw` produces `cannot read location of undefined.`
+
+This is most likely because the new window has been blocked by your popup blocker, so make sure it's disabled before trying again.
+
+Reference: [issue 110](https://github.com/davezuko/react-redux-starter-kit/issues/110)

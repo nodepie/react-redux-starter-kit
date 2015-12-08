@@ -1,38 +1,44 @@
 import webpack           from 'webpack';
-import config            from '../../config';
+import cssnano           from 'cssnano';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
-import autoprefixer      from 'autoprefixer';
+import config            from '../../config';
 
-const paths = config.get('utils_paths');
+const paths = config.utils_paths;
+
+const debug = require('debug')('kit:webpack:_base');
+debug('Create configuration.');
 
 const webpackConfig = {
   name    : 'client',
   target  : 'web',
   entry   : {
     app : [
-      paths.project(config.get('dir_src')) + '/app.js'
+      paths.base(config.dir_client) + '/app.js'
     ],
-    vendor : config.get('vendor_dependencies')
+    vendor : config.compiler_vendor
   },
   output : {
-    filename   : '[name].js',
-    path       : paths.project(config.get('dir_dist')),
+    filename   : '[name].[hash].js',
+    path       : paths.base(config.dir_dist),
     publicPath : '/'
   },
   plugins : [
-    new webpack.DefinePlugin(config.get('globals')),
+    new webpack.DefinePlugin(config.globals),
     new webpack.optimize.OccurrenceOrderPlugin(),
     new webpack.optimize.DedupePlugin(),
     new HtmlWebpackPlugin({
-      template : paths.src('index.html'),
-      hash     : true,
+      template : paths.client('index.html'),
+      hash     : false,
       filename : 'index.html',
-      inject   : 'body'
+      inject   : 'body',
+      minify   : {
+        collapseWhitespace : true
+      }
     })
   ],
   resolve : {
     extensions : ['', '.js', '.jsx'],
-    alias      : config.get('utils_aliases')
+    alias      : config.utils_aliases
   },
   module : {
     loaders : [
@@ -62,7 +68,7 @@ const webpackConfig = {
         test    : /\.scss$/,
         loaders : [
           'style-loader',
-          'css-loader',
+          'css-loader?sourceMap',
           'postcss-loader',
           'sass-loader'
         ]
@@ -77,16 +83,28 @@ const webpackConfig = {
     ]
   },
   sassLoader : {
-    includePaths : paths.src('styles')
+    includePaths : paths.client('styles')
   },
-  postcss : [ autoprefixer({ browsers : ['last 2 versions'] }) ]
+  postcss : [
+    cssnano({
+      sourcemap : true,
+      autoprefixer : {
+        add      : true,
+        remove   : true,
+        browsers : ['last 2 versions']
+      },
+      discardComments : {
+        removeAll : true
+      }
+    })
+  ]
 };
 
 // NOTE: this is a temporary workaround. I don't know how to get Karma
 // to include the vendor bundle that webpack creates, so to get around that
 // we remove the bundle splitting when webpack is used with Karma.
 const commonChunkPlugin = new webpack.optimize.CommonsChunkPlugin(
-  'vendor', '[name].js'
+  'vendor', '[name].[hash].js'
 );
 commonChunkPlugin.__KARMA_IGNORE__ = true;
 webpackConfig.plugins.push(commonChunkPlugin);
