@@ -1,12 +1,11 @@
-require('babel/register');
+import config from '../config'
+import server from '../server/main'
+import _debug from 'debug'
 
-const config = require('../config');
-const server = require('../server/app');
-const debug  = require('debug')('kit:bin:server');
+const debug = _debug('app:bin:server')
+const port = config.server_port
+const host = config.server_host
 
-const host = config.server_host;
-const port = config.server_port;
-
-server.listen(port, host, function () {
-  debug('Server is now running at ' + host + ':' + port + '.');
-});
+server.listen(port)
+debug(`Server is now running at http://${host}:${port}.`)
+debug(`Server accessible via localhost:${port} if you are using the project defaults.`)
