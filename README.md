@@ -6,7 +6,7 @@
 [![devDependency Status](https://david-dm.org/davezuko/react-redux-starter-kit/dev-status.svg)](https://david-dm.org/davezuko/react-redux-starter-kit#info=devDependencies)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
 
-This starter kit is designed to get you up and running with a bunch of awesome new front-end technologies, all on top of a configurable, feature-rich webpack build system that's already setup to provide hot reloading, CSS modules with Sass support, unit testing, code coverage reports, bundle splitting, and a whole lot more.
+This starter kit is designed to get you up and running with a bunch of awesome new front-end technologies, all on top of a configurable, feature-rich webpack build system that's already setup to provide hot reloading, CSS preprocessing with Sass, unit testing, code coverage reports, bundle splitting, and more.
 
 The primary goal of this project is to remain as **unopinionated** as possible. Its purpose is not to dictate your project structure or to demonstrate a complete sample application, but to provide a set of tools intended to make front-end development robust, easy, and, most importantly, fun. Check out the full feature list below!
 
@@ -24,7 +24,6 @@ Finally, This project wouldn't be possible without the help of our many contribu
 1. [Deployment](#deployment)
 1. [Build System](#build-system)
   1. [Configuration](#configuration)
-  1. [Root Resolve](#root-resolve)
   1. [Globals](#globals)
   1. [Styles](#styles)
   1. [Server](#server)
@@ -37,28 +36,35 @@ Finally, This project wouldn't be possible without the help of our many contribu
 * [react](https://github.com/facebook/react)
 * [redux](https://github.com/rackt/redux)
 * [react-router](https://github.com/rackt/react-router)
-* [react-router-redux](https://github.com/rackt/react-router-redux)
 * [webpack](https://github.com/webpack/webpack)
 * [babel](https://github.com/babel/babel)
-* [koa](https://github.com/koajs/koa)
+* [express](https://github.com/expressjs/express)
 * [karma](https://github.com/karma-runner/karma)
 * [eslint](http://eslint.org)
 
 ## Requirements
-* node `^4.2.0`
+* node `^4.5.0`
 * npm `^3.0.0`
 
 ## Getting Started
 
-After confirming that your development environment meets the specified [requirements](#requirements), you can follow these steps to get the project up and running:
+After confirming that your development environment meets the specified [requirements](#requirements), you can create a new project based on `react-redux-starter-kit` in one of two ways:
+
+### Install from source
+
+First, clone the project:
 
 ```bash
-$ git clone https://github.com/davezuko/react-redux-starter-kit.git
-$ cd react-redux-starter-kit
+$ git clone https://github.com/davezuko/react-redux-starter-kit.git <my-project-name>
+$ cd <my-project-name>
+```
+
+Then install dependencies and check to see it works
+
+```bash
 $ npm install                   # Install project dependencies
 $ npm start                     # Compile and launch
 ```
-
 If everything works, you should see the following:
 
 <img src="http://i.imgur.com/zR7VRG6.png?2" />
@@ -70,7 +76,6 @@ While developing, you will probably rely mostly on `npm start`; however, there a
 |`start`|Serves your app at `localhost:3000`. HMR will be enabled in development.|
 |`compile`|Compiles the application to disk (`~/dist` by default).|
 |`dev`|Same as `npm start`, but enables nodemon for the server as well.|
-|`dev:no-debug`|Same as `npm run dev` but disables devtool instrumentation.|
 |`test`|Runs unit tests with Karma and generates a coverage report.|
 |`test:dev`|Runs Karma and watches for changes to re-run tests; does not generate coverage reports.|
 |`deploy`|Runs linter, tests, and then, on success, compiles your application to disk.|
@@ -90,28 +95,30 @@ The application structure presented in this boilerplate is **fractal**, where fu
 ├── build                    # All build-related configuration
 │   └── webpack              # Environment-specific configuration files for webpack
 ├── config                   # Project configuration settings
-├── server                   # Koa application (uses webpack middleware)
+├── server                   # Express application that provides webpack middleware
 │   └── main.js              # Server application entry point
 ├── src                      # Application source code
+│   ├── index.html           # Main HTML page container for app
 │   ├── main.js              # Application bootstrap and rendering
-│   ├── components           # Reusable Presentational Components
-│   ├── containers           # Reusable Container Components
+│   ├── components           # Global Reusable Presentational Components
+│   ├── containers           # Global Reusable Container Components
 │   ├── layouts              # Components that dictate major page structure
+│   ├── redux                # "Ducks" location...
+│   │   └── modules          # reducer, action, creators not part of a route
+│   ├── routes               # Main route definitions and async split points
+│   │   ├── index.js         # Bootstrap main application routes with store
+│   │   └── Home             # Fractal route
+│   │       ├── index.js     # Route definitions and async split points
+│   │       ├── assets       # Assets required to render components
+│   │       ├── components   # Presentational React Components
+│   │       ├── container    # Connect components to actions and store
+│   │       ├── modules      # Collections of reducers/constants/actions
+│   │       └── routes **    # Fractal sub-routes (** optional)
 │   ├── static               # Static assets (not imported anywhere in source code)
-│   ├── styles               # Application-wide styles (generally settings)
 │   ├── store                # Redux-specific pieces
 │   │   ├── createStore.js   # Create and instrument redux store
 │   │   └── reducers.js      # Reducer registry and injection
-│   └── routes               # Main route definitions and async split points
-│       ├── index.js         # Bootstrap main application routes with store
-│       ├── Root.js          # Wrapper component for context-aware providers
-│       └── Home             # Fractal route
-│           ├── index.js     # Route definitions and async split points
-│           ├── assets       # Assets required to render components
-│           ├── components   # Presentational React Components
-│           ├── container    # Connect components to actions and store
-│           ├── modules      # Collections of reducers/constants/actions
-│           └── routes **    # Fractal sub-routes (** optional)
+│   └── styles               # Application-wide styles (generally settings)
 └── tests                    # Unit tests
 ```
 
@@ -134,20 +141,13 @@ Then follow the [manual integration walkthrough](https://github.com/gaearon/redu
 We use `react-router` [route definitions](https://github.com/reactjs/react-router/blob/master/docs/API.md#plainroute) (`<route>/index.js`) to define units of logic within our application. See the [application structure](#application-structure) section for more information.
 
 ## Testing
-To add a unit test, simply create a `.spec.js` file anywhere in `~/tests`. Karma will pick up on these files automatically, and Mocha and Chai will be available within your test without the need to import them. If you are using `redux-cli`, test files should automatically be generated when you create a component or redux module.
-
-Coverage reports will be compiled to `~/coverage` by default. If you wish to change what reporters are used and where reports are compiled, you can do so by modifying `coverage_reporters` in `~/config/index.js`.
+To add a unit test, simply create a `.spec.js` file anywhere in `~/tests`. Karma will pick up on these files automatically, and Mocha and Chai will be available within your test without the need to import them. Coverage reports will be compiled to `~/coverage` by default. If you wish to change what reporters are used and where reports are compiled, you can do so by modifying `coverage_reporters` in `~/config/index.js`.
 
 ## Deployment
 Out of the box, this starter kit is deployable by serving the `~/dist` folder generated by `npm run deploy` (make sure to specify your target `NODE_ENV` as well). This project does not concern itself with the details of server-side rendering or API structure, since that demands an opinionated structure that makes it difficult to extend the starter kit. However, if you do need help with more advanced deployment strategies, here are a few tips:
 
 ### Static Deployments
-If you are serving the application via a web server such as nginx, make sure to direct incoming routes to the root `~/dist/index.html` file and let react-router take care of the rest. The Koa server that comes with the starter kit is able to be extended to serve as an API or whatever else you need, but that's entirely up to you.
-
-### Heroku
-More details to come, but in the meantime check out [this helpful comment](https://github.com/davezuko/react-redux-starter-kit/issues/730#issuecomment-213997120) by [DonHansDampf](https://github.com/DonHansDampf) addressing Heroku deployments.
-
-Have more questions? Feel free to submit an issue or join the Gitter chat!
+If you are serving the application via a web server such as nginx, make sure to direct incoming routes to the root `~/dist/index.html` file and let react-router take care of the rest. If you are unsure of how to do this, you might find [this documentation](https://github.com/reactjs/react-router/blob/master/docs/guides/Histories.md#configuring-your-server) helpful. The Express server that comes with the starter kit is able to be extended to serve as an API or whatever else you need, but that's entirely up to you.
 
 ## Build System
 
@@ -161,14 +161,11 @@ If you need environment-specific overrides (useful for dynamically setting API e
 |---|-----------|
 |`dir_src`|application source code base path|
 |`dir_dist`|path to build compiled application to|
-|`server_host`|hostname for the Koa server|
-|`server_port`|port for the Koa server|
-|`compiler_css_modules`|whether or not to enable CSS modules|
+|`server_host`|hostname for the Express server|
+|`server_port`|port for the Express server|
 |`compiler_devtool`|what type of source-maps to generate (set to `false`/`null` to disable)|
 |`compiler_vendor`|packages to separate into to the vendor bundle|
 
-
-### Root Resolve
 Webpack is configured to make use of [resolve.root](http://webpack.github.io/docs/configuration.html#resolve-root), which lets you import local packages as if you were traversing from the root of your `~/src` directory. Here's an example:
 
 ```js
@@ -190,22 +187,18 @@ These are global variables available to you anywhere in your source code. If you
 |`__DEV__`|True when `process.env.NODE_ENV` is `development`|
 |`__PROD__`|True when `process.env.NODE_ENV` is `production`|
 |`__TEST__`|True when `process.env.NODE_ENV` is `test`|
-|`__DEBUG__`|True when `process.env.NODE_ENV` is `development` and cli arg `--no_debug` is not set (`npm run dev:no-debug`)|
-|`__BASENAME__`|[history basename option](https://github.com/rackt/history/blob/master/docs/BasenameSupport.md)|
 
 ### Styles
 
-Both `.scss` and `.css` file extensions are supported out of the box and are configured to use [CSS Modules](https://github.com/css-modules/css-modules). After being imported, styles will be processed with [PostCSS](https://github.com/postcss/postcss) for minification and autoprefixing, and will be extracted to a `.css` file during production builds.
+Both `.scss` and `.css` file extensions are supported out of the box. After being imported, styles will be processed with [PostCSS](https://github.com/postcss/postcss) for minification and autoprefixing, and will be extracted to a `.css` file during production builds.
 
 ### Server
 
-This starter kit comes packaged with an Koa server. It's important to note that the sole purpose of this server is to provide `webpack-dev-middleware` and `webpack-hot-middleware` for hot module replacement. Using a custom Koa app in place of [webpack-dev-server](https://github.com/webpack/webpack-dev-server) makes it easier to extend the starter kit to include functionality such as API's, universal rendering, and more -- all without bloating the base boilerplate.
+This starter kit comes packaged with an Express server. It's important to note that the sole purpose of this server is to provide `webpack-dev-middleware` and `webpack-hot-middleware` for hot module replacement. Using a custom Express app in place of [webpack-dev-server](https://github.com/webpack/webpack-dev-server) makes it easier to extend the starter kit to include functionality such as API's, universal rendering, and more -- all without bloating the base boilerplate.
 
 ### Production Optimization
 
-Babel is configured to use [babel-plugin-transform-runtime](https://www.npmjs.com/package/babel-plugin-transform-runtime) so transforms aren't inlined. Additionally, in production, we use [react-optimize](https://github.com/thejameskyle/babel-react-optimize) to further optimize your React code.
-
-In production, webpack will extract styles to a `.css` file, minify your JavaScript, and perform additional optimizations such as module deduplication.
+Babel is configured to use [babel-plugin-transform-runtime](https://www.npmjs.com/package/babel-plugin-transform-runtime) so transforms aren't inlined. In production, webpack will extract styles to a `.css` file, minify your JavaScript, and perform additional optimizations such as module deduplication.
 
 ## Learning Resources
 
